@@ -1,6 +1,6 @@
 import Cocoa
+import Login
 
-@NSApplicationMain
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         AccessibilityHelper.askForAccessibilityIfNeeded()
@@ -15,3 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 }
+
+let delegate = AppDelegate()
+let app = NSApplication.shared()
+app.delegate = delegate
+app.run()

@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import Login
 
 private let SuppressionKey = "loginAlertSuppressionKey"
 
