@@ -2,17 +2,17 @@ import AppKit
 import Foundation
 
 final class Mover {
-    var state: FlagState = .Ignore {
+    private var monitor: Any?
+    private var lastMousePosition: CGPoint?
+    private var window: AccessibilityElement?
+
+    var state: FlagState = .ignore {
         didSet {
             if self.state != oldValue {
                 self.changed(state: self.state)
             }
         }
     }
-
-    private var monitor: Any?
-    private var lastMousePosition: CGPoint?
-    private var window: AccessibilityElement?
 
     private func mouseMoved(handler: (_ window: AccessibilityElement, _ mouseDelta: CGPoint) -> Void) {
         let point = Mouse.currentPosition()
@@ -24,8 +24,8 @@ final class Mover {
             return
         }
 
-        let currentPid = NSRunningApplication.current().processIdentifier
-        if let pid = window.pid(), pid != currentPid {
+        let frontmostPID = NSRunningApplication.current().processIdentifier
+        if let pid = window.pid(), pid != frontmostPID {
             NSRunningApplication(processIdentifier: pid)?.activate(options: .activateIgnoringOtherApps)
         }
 
@@ -56,15 +56,15 @@ final class Mover {
         self.removeMonitor()
 
         switch state {
-        case .Resize:
-            self.monitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { _ in
-                self.mouseMoved(handler: self.resizeWindow)
+        case .resize:
+            self.monitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] _ in
+                self?.mouseMoved(handler: self!.resizeWindow)
             }
-        case .Drag:
-            self.monitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { _ in
-                self.mouseMoved(handler: self.moveWindow)
+        case .drag:
+            self.monitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] _ in
+                self?.mouseMoved(handler: self!.moveWindow)
             }
-        case .Ignore:
+        case .ignore:
             self.lastMousePosition = nil
             self.window = nil
         }
@@ -74,6 +74,7 @@ final class Mover {
         if let monitor = self.monitor {
             NSEvent.removeMonitor(monitor)
         }
+
         self.monitor = nil
     }
 

@@ -1,11 +1,13 @@
 import Cocoa
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private let observer = Observer()
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         AccessibilityHelper.askForAccessibilityIfNeeded()
 
         let mover = Mover()
-        Observer().startObserving { state in
+        self.observer.startObserving { state in
             mover.state = state
         }
     }

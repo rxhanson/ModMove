@@ -2,6 +2,7 @@ import AppKit
 import Foundation
 
 final class AccessibilityElement {
+    private let elementRef: AXUIElement
     static let systemWideElement = AccessibilityElement.createSystemWideElement()
 
     var position: CGPoint? {
@@ -21,8 +22,6 @@ final class AccessibilityElement {
             }
         }
     }
-
-    private let elementRef: AXUIElement
 
     init(elementRef: AXUIElement) {
         self.elementRef = elementRef
@@ -56,9 +55,9 @@ final class AccessibilityElement {
     }
 
     func pid() -> pid_t? {
-        let pointer = UnsafeMutablePointer<pid_t>.allocate(capacity: 1)
-        let error = AXUIElementGetPid(self.elementRef, pointer)
-        return error == .success ? pointer.pointee : nil
+        var pid: pid_t = 0
+        let error = AXUIElementGetPid(self.elementRef, &pid)
+        return error == .success ? pid : nil
     }
 
     func bringToFront() {
@@ -74,7 +73,7 @@ final class AccessibilityElement {
 
     // MARK: - Private functions
 
-    static private func createSystemWideElement() -> Self {
+    private static func createSystemWideElement() -> Self {
         return self.init(elementRef: AXUIElementCreateSystemWide())
     }
 

@@ -2,36 +2,45 @@ import AppKit
 import Foundation
 
 enum FlagState {
-    case Resize
-    case Drag
-    case Ignore
+    case resize
+    case drag
+    case ignore
 }
 
 final class Observer {
     private var monitor: Any?
 
-    func startObserving(state: @escaping (FlagState) -> Void) {
-        self.monitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { event in
-            state(self.state(for: event.modifierFlags))
+    func startObserving(handler: @escaping (FlagState) -> Void) {
+        self.removeMonitor()
+        self.monitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            if let state = self?.state(for: event.modifierFlags) {
+                handler(state)
+            }
         }
     }
 
     private func state(for flags: NSEventModifierFlags) -> FlagState {
-        let hasMain = flags.contains(.control) && flags.contains(.option)
+        let hasControlAndOption = flags.contains(.control) && flags.contains(.option)
         let hasShift = flags.contains(.shift)
 
-        if hasMain && hasShift {
-            return .Resize
-        } else if hasMain {
-            return .Drag
+        if hasShift && hasControlAndOption {
+            return .resize
+        } else if hasControlAndOption {
+            return .drag
         } else {
-            return .Ignore
+            return .ignore
         }
     }
 
-    deinit {
+    private func removeMonitor() {
         if let monitor = self.monitor {
             NSEvent.removeMonitor(monitor)
         }
+
+        self.monitor = nil
+    }
+
+    deinit {
+        self.removeMonitor()
     }
 }

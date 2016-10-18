@@ -8,8 +8,7 @@ extension AXValue {
     }
 
     static func from<T>(value: T, type: AXValueType) -> AXValue? {
-        let pointer = UnsafeMutablePointer<T>.allocate(capacity: 1)
-        pointer.pointee = value
-        return AXValueCreate(type, pointer)
+        var value = value
+        return AXValueCreate(type, &value)
     }
 }
