@@ -87,6 +87,7 @@ final class Mover {
 
     private func changed(state: FlagState) {
         self.removeMonitor()
+        self.resetState()
 
         switch state {
         case .Resize:
@@ -98,12 +99,16 @@ final class Mover {
                 self.mouseMoved(handler: self.moveWindow)
             }
         case .Ignore:
-            self.initialMousePosition = nil
-            self.initialWindowPosition = nil
-            self.initialWindowSize = nil
-            self.closestCorner = nil
-            self.window = nil
+            break
         }
+    }
+
+    private func resetState() {
+        self.initialMousePosition = nil
+        self.initialWindowPosition = nil
+        self.initialWindowSize = nil
+        self.closestCorner = nil
+        self.window = nil
     }
 
     private func removeMonitor() {
