@@ -1,6 +1,13 @@
 import AppKit
 import Foundation
 
+enum Corner {
+    case TopLeft
+    case TopRight
+    case BottomLeft
+    case BottomRight
+}
+
 final class Mover {
     var state: FlagState = .Ignore {
         didSet {
@@ -14,7 +21,7 @@ final class Mover {
     private var initialMousePosition: CGPoint?
     private var initialWindowPosition: CGPoint?
     private var initialWindowSize: CGSize?
-    private var closestCorner: Int?
+    private var closestCorner: Corner?
     private var window: AccessibilityElement?
 
     private func mouseMoved(handler: (_ window: AccessibilityElement, _ mouseDelta: CGPoint) -> Void) {
@@ -43,38 +50,37 @@ final class Mover {
         }
     }
 
-    private func getClosestCorner(window: AccessibilityElement, mouse: CGPoint) -> Int {
+    private func getClosestCorner(window: AccessibilityElement, mouse: CGPoint) -> Corner {
         if let size = window.size, let position = window.position {
             let xmid = position.x + size.width / 2
             let ymid = position.y + size.height / 2
             if mouse.x < xmid && mouse.y < ymid {
-                return 0  // top left
+                return .TopLeft
             } else if mouse.x >= xmid && mouse.y < ymid {
-                return 1  // top right
+                return .TopRight
             } else if mouse.x < xmid && mouse.y >= ymid {
-                return 2  // bottom left
+                return .BottomLeft
             } else {
-                return 3  // bottom right
+                return .BottomRight
             }
         }
-        return 3
+        return .BottomRight
     }
 
     private func resizeWindow(window: AccessibilityElement, mouseDelta: CGPoint) {
         if let initWinSize = self.initialWindowSize, let initWinPos = self.initialWindowPosition, let corner = self.closestCorner {
             switch corner {
-            case 0:
+            case .TopLeft:
                 window.position = CGPoint(x: initWinPos.x + mouseDelta.x, y: initWinPos.y + mouseDelta.y)
                 window.size = CGSize(width: initWinSize.width - mouseDelta.x, height: initWinSize.height - mouseDelta.y)
-            case 1:
+            case .TopRight:
                 window.position = CGPoint(x: initWinPos.x, y: initWinPos.y + mouseDelta.y)
                 window.size = CGSize(width: initWinSize.width + mouseDelta.x, height: initWinSize.height - mouseDelta.y)
-            case 2:
+            case .BottomLeft:
                 window.position = CGPoint(x: initWinPos.x + mouseDelta.x, y: initWinPos.y)
                 window.size = CGSize(width: initWinSize.width - mouseDelta.x, height: initWinSize.height + mouseDelta.y)
-            case 3:
+            case .BottomRight:
                 window.size = CGSize(width: initWinSize.width + mouseDelta.x, height: initWinSize.height + mouseDelta.y)
-            default: break
             }
         }
     }
