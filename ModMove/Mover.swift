@@ -23,6 +23,7 @@ final class Mover {
     private var initialWindowSize: CGSize?
     private var closestCorner: Corner?
     private var window: AccessibilityElement?
+    private var frame: NSRect?
 
     private func mouseMoved(handler: (_ window: AccessibilityElement, _ mouseDelta: CGPoint) -> Void) {
         let point = Mouse.currentPosition()
@@ -38,6 +39,7 @@ final class Mover {
             self.initialWindowPosition = window.position
             self.initialWindowSize = window.size
             self.closestCorner = self.getClosestCorner(window: window, mouse: point)
+            self.frame = getUsableScreen()
 
             let currentPid = NSRunningApplication.current.processIdentifier
             if let pid = window.pid(), pid != currentPid {
@@ -48,6 +50,15 @@ final class Mover {
             let mouseDelta = CGPoint(x: point.x - initialMousePosition.x, y: point.y - initialMousePosition.y)
             handler(window, mouseDelta)
         }
+    }
+
+    private func getUsableScreen() -> NSRect? {
+        if var visible = NSScreen.main?.visibleFrame, let full = NSScreen.main?.frame {
+            // For some reason, visibleFrame still has minY = 0 even though the menubar is there?
+            visible.origin.y = full.size.height - visible.size.height
+            return visible
+        }
+        return NSRect.zero
     }
 
     private func getClosestCorner(window: AccessibilityElement, mouse: CGPoint) -> Corner {
@@ -68,25 +79,34 @@ final class Mover {
     }
 
     private func resizeWindow(window: AccessibilityElement, mouseDelta: CGPoint) {
-        if let initWinSize = self.initialWindowSize, let initWinPos = self.initialWindowPosition, let corner = self.closestCorner {
+        if let initWinSize = self.initialWindowSize, let initWinPos = self.initialWindowPosition,
+            let corner = self.closestCorner, let frame = self.frame {
             switch corner {
             case .TopLeft:
-                window.position = CGPoint(x: initWinPos.x + mouseDelta.x, y: initWinPos.y + mouseDelta.y)
-                window.size = CGSize(width: initWinSize.width - mouseDelta.x, height: initWinSize.height - mouseDelta.y)
+                let mdx = max(mouseDelta.x, frame.minX - initWinPos.x)
+                let mdy = max(mouseDelta.y, frame.minY - initWinPos.y)
+                window.position =  CGPoint(x: initWinPos.x + mdx, y: initWinPos.y + mdy)
+                window.size = CGSize(width: initWinSize.width - mdx, height: initWinSize.height - mdy)
             case .TopRight:
-                window.position = CGPoint(x: initWinPos.x, y: initWinPos.y + mouseDelta.y)
-                window.size = CGSize(width: initWinSize.width + mouseDelta.x, height: initWinSize.height - mouseDelta.y)
+                let mdx = min(mouseDelta.x, frame.maxX - (initWinPos.x + initWinSize.width))
+                let mdy = max(mouseDelta.y, frame.minY - initWinPos.y)
+                window.position = CGPoint(x: initWinPos.x, y: initWinPos.y + mdy)
+                window.size = CGSize(width: initWinSize.width + mdx, height: initWinSize.height - mdy )
             case .BottomLeft:
-                window.position = CGPoint(x: initWinPos.x + mouseDelta.x, y: initWinPos.y)
-                window.size = CGSize(width: initWinSize.width - mouseDelta.x, height: initWinSize.height + mouseDelta.y)
+                let mdx = max(mouseDelta.x, frame.minX - initWinPos.x)
+                let mdy = min(mouseDelta.y, frame.maxY - (initWinPos.y + initWinSize.height))
+                window.position = CGPoint(x: initWinPos.x + mdx, y: initWinPos.y)
+                window.size = CGSize(width: initWinSize.width - mdx, height: initWinSize.height + mdy)
             case .BottomRight:
-                window.size = CGSize(width: initWinSize.width + mouseDelta.x, height: initWinSize.height + mouseDelta.y)
+                let mdx = min(mouseDelta.x, frame.maxX - (initWinPos.x + initWinSize.width))
+                let mdy = min(mouseDelta.y, frame.maxY - (initWinPos.y + initWinSize.height))
+                window.size = CGSize(width: initWinSize.width + mdx, height: initWinSize.height + mdy)
             }
         }
     }
 
     private func moveWindow(window: AccessibilityElement, mouseDelta: CGPoint) {
-    if let initWinPos = self.initialWindowPosition {
+        if let initWinPos = self.initialWindowPosition {
             window.position = CGPoint(x: initWinPos.x + mouseDelta.x, y: initWinPos.y + mouseDelta.y)
         }
     }
