@@ -106,8 +106,12 @@ final class Mover {
     }
 
     private func moveWindow(window: AccessibilityElement, mouseDelta: CGPoint) {
-        if let initWinPos = self.initialWindowPosition {
-            window.position = CGPoint(x: initWinPos.x + mouseDelta.x, y: initWinPos.y + mouseDelta.y)
+        if let initWinPos = self.initialWindowPosition, let initWinSize = self.initialWindowSize, let frame = self.frame {
+            let mdx = min(max(mouseDelta.x, frame.minX - initWinPos.x),
+                          frame.maxX - (initWinPos.x + initWinSize.width))
+            let mdy = min(max(mouseDelta.y, frame.minY - initWinPos.y),
+                          frame.maxY - (initWinPos.y + initWinSize.height))
+            window.position = CGPoint(x: initWinPos.x + mdx, y: initWinPos.y + mdy)
         }
     }
 
